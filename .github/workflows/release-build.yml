@@ -32,9 +32,9 @@ jobs:
         run: composer update --no-interaction --no-progress --with-all-dependencies
 
       - name: "Download Sources (Host)"
-        # Download semua source code yang diperlukan sebelum masuk container
+        # Versi extension yang lebih ringkas agar build lebih cepat
         run: |
-          ./bin/spc download --with-php=8.4 --for-extensions="bcmath,ctype,curl,dom,exif,fileinfo,filter,gd,iconv,mbstring,mysqli,mysqlnd,opcache,openssl,pcntl,pdo,pdo_mysql,pdo_sqlite,phar,posix,session,simplexml,sockets,sqlite3,tokenizer,xml,xmlwriter,xmlreader,zip,zlib"
+          ./bin/spc download --with-php=8.4 --for-extensions="bcmath,curl,dom,fileinfo,filter,gd,iconv,mbstring,mysqli,mysqlnd,opcache,openssl,pcntl,pdo,pdo_mysql,pdo_sqlite,phar,posix,session,simplexml,sockets,sqlite3,xml,zip,zlib"
 
       - name: "Build Binary inside ARM64 Container"
         uses: addnab/docker-run-action@v3
@@ -42,21 +42,25 @@ jobs:
           image: alpine:edge
           options: --platform linux/arm64 -v ${{ github.workspace }}:/app -w /app
           run: |
-            # UPDATE: Menambahkan 'curl' dan 'pkgconf' agar SPC doctor bisa bekerja
+            # Install dependency
             apk add --no-cache curl pkgconf php83 php83-cli php83-phar php83-mbstring php83-openssl php83-curl php83-tokenizer php83-dom php83-xml php83-xmlwriter composer build-base clang make cmake git linux-headers
             
-            # Cek arsitektur
-            uname -m
-            
-            # Jalankan Doctor untuk fix environment (sekarang harusnya sukses karena ada curl)
+            # Fix environment
             ./bin/spc doctor --auto-fix
             
-            # Jalankan Build
-            ./bin/spc build --build-cli "bcmath,ctype,curl,dom,exif,fileinfo,filter,gd,iconv,mbstring,mysqli,mysqlnd,opcache,openssl,pcntl,pdo,pdo_mysql,pdo_sqlite,phar,posix,session,simplexml,sockets,sqlite3,tokenizer,xml,xmlwriter,xmlreader,zip,zlib"
+            # Build dengan daftar extension yang sama
+            ./bin/spc build --build-cli "bcmath,curl,dom,fileinfo,filter,gd,iconv,mbstring,mysqli,mysqlnd,opcache,openssl,pcntl,pdo,pdo_mysql,pdo_sqlite,phar,posix,session,simplexml,sockets,sqlite3,xml,zip,zlib"
 
       - name: "Get PHP Info & Rename"
         run: |
+          # SOLUSI ERROR: Gunakan sudo chown untuk ambil alih permission file dari Docker
+          echo "Mengambil alih permission file..."
+          sudo chown -R $USER:$USER buildroot/
+          
+          echo "Memindahkan file..."
           mv buildroot/bin/php php-8.4-android-arm64
+          
+          echo "Cek hasil:"
           ls -lh php-8.4-android-arm64
 
       - name: "Upload Artifact"
