@@ -33,7 +33,7 @@ jobs:
 
       - name: "Download Sources (Host)"
         run: |
-          ./bin/spc download --with-php=8.4 --for-extensions="bcmath,ctype,curl,dom,exif,fileinfo,filter,gd,iconv,mbstring,mysqli,mysqlnd,opcache,openssl,pcntl,pdo,pdo_mysql,pdo_sqlite,phar,posix,session,simplexml,sockets,sqlite3,xml,zip,zlib"
+          ./bin/spc download --with-php=8.4 --for-extensions="bcmath,bz2,calendar,ctype,curl,dom,exif,fileinfo,filter,ftp,gd,gmp,iconv,xml,mbstring,mbregex,mysqlnd,openssl,pcntl,pdo,pdo_mysql,pdo_sqlite,pdo_pgsql,pgsql,phar,posix,redis,session,simplexml,soap,sockets,sqlite3,tokenizer,xmlwriter,xmlreader,zlib,zip"
 
       - name: "Build Binary inside ARM64 Container"
         uses: addnab/docker-run-action@v3
@@ -47,7 +47,7 @@ jobs:
             
             ./bin/spc doctor --auto-fix
             
-            ./bin/spc build --build-cli "bcmath,ctype,curl,dom,exif,fileinfo,filter,gd,iconv,mbstring,mysqli,mysqlnd,opcache,openssl,pcntl,pdo,pdo_mysql,pdo_sqlite,phar,posix,session,simplexml,sockets,sqlite3,xml,zip,zlib"
+            ./bin/spc build --build-cli "bcmath,bz2,calendar,ctype,curl,dom,exif,fileinfo,filter,ftp,gd,gmp,iconv,xml,mbstring,mbregex,mysqlnd,openssl,pcntl,pdo,pdo_mysql,pdo_sqlite,pdo_pgsql,pgsql,phar,posix,redis,session,simplexml,soap,sockets,sqlite3,tokenizer,xmlwriter,xmlreader,zlib,zip"
 
       - name: "Get PHP Info & Rename"
         run: |
@@ -65,4 +65,3 @@ jobs:
         with:
           name: php-8.4-android-arm64
           path: php-8.4-android-arm64
-
