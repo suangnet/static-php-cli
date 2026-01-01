@@ -18,23 +18,25 @@ jobs:
       - name: "Checkout Code"
         uses: actions/checkout@v4
 
-      - name: "Setup PHP"
+      - name: "Setup PHP Builder"
         uses: shivammathur/setup-php@v2
         with:
-          php-version: 8.3
+          # UPDATE: Kita pakai PHP 8.4 di Runner agar warning deprecated hilang
+          php-version: 8.4
           tools: composer:v2
           coverage: none
 
       - name: "Install Dependencies"
-        run: composer update --no-interaction --no-progress
+        run: composer update --no-interaction --no-progress --with-all-dependencies
 
       - name: "Download Sources (PHP + Libraries)"
-        # Kita download source code PHP dan library yang dibutuhkan
+        # FIX: Menghapus flag '--all-php' yang error.
+        # Cukup pakai '--with-php' dan '--for-extensions'.
         run: |
-          ./bin/spc download --all-php=8.4 --with-php=8.4 --for-extensions="bcmath,ctype,curl,dom,exif,fileinfo,filter,gd,iconv,mbstring,mysqli,mysqlnd,opcache,openssl,pcntl,pdo,pdo_mysql,pdo_sqlite,phar,posix,session,simplexml,sockets,sqlite3,tokenizer,xml,xmlwriter,xmlreader,zip,zlib"
+          ./bin/spc download --with-php=8.4 --for-extensions="bcmath,ctype,curl,dom,exif,fileinfo,filter,gd,iconv,mbstring,mysqli,mysqlnd,opcache,openssl,pcntl,pdo,pdo_mysql,pdo_sqlite,phar,posix,session,simplexml,sockets,sqlite3,tokenizer,xml,xmlwriter,xmlreader,zip,zlib"
 
       - name: "Build Binary (via Docker)"
-        # Menggunakan flag --with-docker agar bisa build ARM64 di server x86
+        # Menggunakan Docker untuk cross-compile ke ARM64 (Android)
         run: |
           ./bin/spc build \
             --build-os=linux \
@@ -45,10 +47,10 @@ jobs:
 
       - name: "Get PHP Info & Rename"
         run: |
-          # Rename agar jelas
+          # Rename file hasil agar mudah dikenali
           mv buildroot/bin/php php-8.4-android-arm64
           
-          # Cek ukuran file
+          # Cek ukuran file untuk memastikan build sukses
           ls -lh php-8.4-android-arm64
 
       - name: "Upload Artifact"
