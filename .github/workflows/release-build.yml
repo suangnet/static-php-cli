@@ -18,11 +18,9 @@ jobs:
       - name: "Checkout Code"
         uses: actions/checkout@v4
 
-      # 1. Siapkan Emulator QEMU untuk menjalankan ARM64 di server x86
       - name: "Set up QEMU"
         uses: docker/setup-qemu-action@v3
 
-      # 2. Siapkan PHP di Host untuk proses Download Source (Download tidak butuh ARM)
       - name: "Setup PHP (Host)"
         uses: shivammathur/setup-php@v2
         with:
@@ -33,40 +31,32 @@ jobs:
       - name: "Install Dependencies (Host)"
         run: composer update --no-interaction --no-progress --with-all-dependencies
 
-      # 3. Download Source Code PHP & Library (Dilakukan di Host agar lebih cepat)
-      - name: "Download Sources"
+      - name: "Download Sources (Host)"
+        # Download semua source code yang diperlukan sebelum masuk container
         run: |
           ./bin/spc download --with-php=8.4 --for-extensions="bcmath,ctype,curl,dom,exif,fileinfo,filter,gd,iconv,mbstring,mysqli,mysqlnd,opcache,openssl,pcntl,pdo,pdo_mysql,pdo_sqlite,phar,posix,session,simplexml,sockets,sqlite3,tokenizer,xml,xmlwriter,xmlreader,zip,zlib"
 
-      # 4. PROSES BUILD (Dilakukan di dalam Container Docker ARM64)
       - name: "Build Binary inside ARM64 Container"
         uses: addnab/docker-run-action@v3
         with:
           image: alpine:edge
-          # KUNCI: Kita memaksa container berjalan sebagai linux/arm64
           options: --platform linux/arm64 -v ${{ github.workspace }}:/app -w /app
           run: |
-            # A. Install PHP & Tools dasar di dalam Alpine ARM64
-            apk add --no-cache php83 php83-cli php83-phar php83-mbstring php83-openssl php83-curl php83-tokenizer php83-dom php83-xml php83-xmlwriter composer build-base clang make cmake git linux-headers
+            # UPDATE: Menambahkan 'curl' dan 'pkgconf' agar SPC doctor bisa bekerja
+            apk add --no-cache curl pkgconf php83 php83-cli php83-phar php83-mbstring php83-openssl php83-curl php83-tokenizer php83-dom php83-xml php83-xmlwriter composer build-base clang make cmake git linux-headers
             
-            # B. Cek arsitektur (Wajib aarch64)
+            # Cek arsitektur
             uname -m
             
-            # C. Jalankan Doctor untuk fix environment container
+            # Jalankan Doctor untuk fix environment (sekarang harusnya sukses karena ada curl)
             ./bin/spc doctor --auto-fix
             
-            # D. Jalankan Build (Perintah 'build' sekarang murni tanpa flag aneh-aneh)
-            # --build-cli: Artinya kita mau output binary CLI (bukan micro/fpm)
+            # Jalankan Build
             ./bin/spc build --build-cli "bcmath,ctype,curl,dom,exif,fileinfo,filter,gd,iconv,mbstring,mysqli,mysqlnd,opcache,openssl,pcntl,pdo,pdo_mysql,pdo_sqlite,phar,posix,session,simplexml,sockets,sqlite3,tokenizer,xml,xmlwriter,xmlreader,zip,zlib"
 
-      # 5. Ambil Hasil & Upload
       - name: "Get PHP Info & Rename"
         run: |
-          # File hasil build ada di folder buildroot/bin/
           mv buildroot/bin/php php-8.4-android-arm64
-          
-          # Cek file (harus ELF 64-bit LSB pie executable, ARM aarch64)
-          file php-8.4-android-arm64
           ls -lh php-8.4-android-arm64
 
       - name: "Upload Artifact"
